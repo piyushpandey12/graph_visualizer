@@ -3,17 +3,17 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import networkx as nx
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import io, base64, math
 import serverless_wsgi
 
-from graph_visualizer import (
+from api.graph_visualizer import (
     Graph, dijkstra, bellman_ford, floyd_warshall, fw_path, a_star
 )
 
 # Flask app
-app = Flask(__name__)
+app = Flask(__name__, template_folder="../templates", static_folder="../static")
 CORS(app)
 
 # --- Helper functions ---
@@ -62,6 +62,17 @@ def build_graph_from_payload(payload):
         g.add_edge(u, v, w)
     return g
 
+
+# --- Web Routes ---
+@app.route("/")
+def home():
+    return render_template("welcome.html")
+
+@app.route("/index")
+def index():
+    return render_template("index.html")
+
+
 # --- API Endpoint ---
 @app.route("/api/run", methods=["POST"])
 def api_run():
@@ -71,7 +82,7 @@ def api_run():
     src = (data.get("src") or "").strip().upper()
     dst = (data.get("dst") or "").strip().upper()
 
-    # Default sample graph (A–F, no negatives)
+    # Default sample graph
     if mode == "default":
         g = Graph()
         g.set_pos('A',(0,0)); g.set_pos('B',(2,1))

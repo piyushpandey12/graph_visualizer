@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Graph Algorithm Visualizer</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <!-- ✅ Correct Flask static linking -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header>
@@ -67,135 +68,8 @@ E,F,2"></textarea>
       <pre id="output">—</pre>
     </section>
   </main>
-<script>
-  function parseNodes(text) {
-    const nodes = [];
-    for (const raw of text.split(/\r?\n/)) {
-      const line = raw.trim();
-      if (!line) continue;
-      const parts = line.split(",").map(s => s.trim());
-      const name = (parts[0] || "").toUpperCase();
-      if (!name) continue;
-      if (parts.length >= 3 && parts[1] !== "" && parts[2] !== "") {
-        const x = Number(parts[1]);
-        const y = Number(parts[2]);
-        if (!Number.isNaN(x) && !Number.isNaN(y)) {
-          nodes.push({ name, x, y });
-          continue;
-        }
-      }
-      nodes.push({ name });
-    }
-    return nodes;
-  }
 
-  function parseEdges(text) {
-    const edges = [];
-    for (const raw of text.split(/\r?\n/)) {
-      const line = raw.trim();
-      if (!line) continue;
-      const [u, v, w] = line.split(",").map(s => s.trim());
-      if (!u || !v) continue;
-      const weight = Number(w ?? "1");
-      edges.push({
-        u: u.toUpperCase(),
-        v: v.toUpperCase(),
-        w: Number.isNaN(weight) ? 1 : weight
-      });
-    }
-    return edges;
-  }
-
-  async function run() {
-    const mode = document.querySelector('input[name="mode"]:checked').value;
-    const algo = document.getElementById("algo").value;
-    const src = document.getElementById("src").value.trim();
-    const dst = document.getElementById("dst").value.trim();
-
-    const payload = { mode, algo, src, dst };
-
-    if (mode === "custom") {
-      payload.nodes = parseNodes(document.getElementById("nodes").value);
-      payload.edges = parseEdges(document.getElementById("edges").value);
-    } 
-    else if (mode === "default") {
-      // Example default graph
-      payload.nodes = [
-        { name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }, { name: "E" }, { name: "F" }
-      ];
-      payload.edges = [
-        { u: "A", v: "B", w: 2 },
-        { u: "A", v: "D", w: 4 },
-        { u: "B", v: "C", w: 2 },
-        { u: "B", v: "E", w: 5 },
-        { u: "C", v: "F", w: 3 },
-        { u: "D", v: "E", w: 1 },
-        { u: "E", v: "F", w: 2 }
-      ];
-    } 
-    else if (mode === "negative_demo") {
-      payload.nodes = [
-        { name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }
-      ];
-      payload.edges = [
-        { u: "A", v: "B", w: 4 },
-        { u: "A", v: "C", w: 5 },
-        { u: "B", v: "C", w: -3 }, // negative edge
-        { u: "C", v: "D", w: 2 },
-        { u: "D", v: "B", w: 1 }
-      ];
-    }
-
-    const resEl = document.getElementById("output");
-    resEl.textContent = "Running...";
-
-    try {
-      const resp = await fetch("http://127.0.0.1:5000/api/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await resp.json();
-      resEl.textContent = "";
-
-      if (!resp.ok) {
-        resEl.textContent = JSON.stringify(data, null, 2);
-        return;
-      }
-
-      if (data.image) {
-        const img = document.createElement("img");
-        img.src = "data:image/png;base64," + data.image;
-        img.style.maxWidth = "100%";
-        resEl.appendChild(img);
-      }
-
-      if (data.path) {
-        const p = document.createElement("pre");
-        p.textContent = `${data.algo} Path: ${JSON.stringify(data.path)} cost= ${data.cost}.0`;
-        resEl.appendChild(p);
-      }
-
-    } catch (err) {
-      resEl.textContent = String(err);
-    }
-  }
-
-  function toggleCustomSection() {
-    const mode = document.querySelector('input[name="mode"]:checked').value;
-    document.getElementById("customSection").style.display =
-      (mode === "custom") ? "grid" : "none";
-  }
-
-  document.querySelectorAll('input[name="mode"]').forEach(r => {
-    r.addEventListener("change", toggleCustomSection);
-  });
-
-  toggleCustomSection();
-
-  document.getElementById("runBtn").addEventListener("click", run);
-</script>
-
+  <!-- ✅ Flask will serve this -->
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
