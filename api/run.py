@@ -12,7 +12,7 @@ from api.graph_visualizer import (
     Graph, dijkstra, bellman_ford, floyd_warshall, fw_path, a_star
 )
 
-# Flask app
+# --- Flask App ---
 app = Flask(__name__, template_folder="../templates", static_folder="../static")
 CORS(app)
 

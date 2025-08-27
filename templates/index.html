@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Graph Algorithm Visualizer</title>
+
   <!-- ✅ Correct Flask static linking -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -69,7 +70,7 @@ E,F,2"></textarea>
     </section>
   </main>
 
-  <!-- ✅ Flask will serve this -->
+  <!-- ✅ JS loaded via Flask static -->
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
