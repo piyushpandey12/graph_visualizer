@@ -1,13 +1,15 @@
 {
   "version": 2,
   "builds": [
-    { "src": "app.py", "use": "@vercel/python" },
+    { "src": "api/run.py", "use": "@vercel/python" },
     { "src": "templates/*.html", "use": "@vercel/static" },
     { "src": "static/**/*", "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/static/(.*)", "dest": "static/$1" },
-    { "src": "/", "dest": "app.py" },
-    { "src": "/index", "dest": "app.py" }
+    { "src": "/api/(.*)", "dest": "api/run.py" },
+    { "src": "/api/run", "dest": "api/run.py" },
+    { "src": "/", "dest": "templates/welcome.html" },
+    { "src": "/index", "dest": "templates/index.html" }
   ]
 }

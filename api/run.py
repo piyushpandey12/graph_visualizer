@@ -8,7 +8,7 @@ from flask_cors import CORS
 import io, base64, math
 import serverless_wsgi
 
-from graph_visualizer import (
+from api.graph_visualizer import (
     Graph, dijkstra, bellman_ford, floyd_warshall, fw_path, a_star
 )
 
