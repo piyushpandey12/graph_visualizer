@@ -6,9 +6,10 @@
     { "src": "static/**/*", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/static/(.*)", "dest": "static/$1" },
+    { "src": "/api/(.*)", "dest": "api/run.py" },
     { "src": "/api/run", "dest": "api/run.py" },
     { "src": "/", "dest": "templates/welcome.html" },
-    { "src": "/index", "dest": "templates/index.html" },
-    { "src": "/static/(.*)", "dest": "static/$1" }
+    { "src": "/index", "dest": "templates/index.html" }
   ]
 }
