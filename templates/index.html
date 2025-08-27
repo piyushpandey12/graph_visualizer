@@ -5,8 +5,123 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Graph Algorithm Visualizer</title>
 
-  <!-- ✅ Correct Flask static linking -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #171a2b;
+      --text: #eaeaf2;
+      --muted: #a8acc4;
+      --accent: #6aa8ff;
+      --accent-2: #9f7aff;
+      --border: #2b3150;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(1200px 600px at 20% -10%, #1b2240 0%, #0f1220 60%) fixed;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    }
+
+    header {
+      padding: 32px 20px 10px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: .5px;
+    }
+    .sub {
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      background: linear-gradient(180deg, #1b1f35, #15182a);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    textarea, input, select, button {
+      background: #0f1220;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      outline: none;
+    }
+    textarea {
+      width: 100%;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      resize: vertical;
+    }
+    input { min-width: 150px; }
+    select { min-width: 260px; }
+
+    button {
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      color: #0c0f1e;
+      font-weight: 700;
+      transition: transform .05s ease, filter .2s ease;
+    }
+    button:hover { filter: brightness(1.05); }
+    button:active { transform: translateY(1px); }
+
+    #output {
+      max-height: none;
+      overflow: auto;
+    }
+    #output img {
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+
+    pre {
+      background: #0b0e1b;
+      border: 1px solid var(--border);
+      padding: 14px;
+      border-radius: 12px;
+      overflow: auto;
+      max-height: 420px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 28px 0 40px;
+      color: var(--muted);
+    }
+    label {
+      color: var(--muted);
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -70,7 +185,176 @@ E,F,2"></textarea>
     </section>
   </main>
 
-  <!-- ✅ JS loaded via Flask static -->
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    // --- Predefined graphs ---
+    const defaultGraph = {
+      nodes: ["A", "B", "C"],
+      edges: [
+        { source: "A", target: "B", weight: 6 },
+        { source: "B", target: "C", weight: 4 },
+        { source: "A", target: "C", weight: 10 }
+      ]
+    };
+
+    const negativeEdgeGraph = {
+      nodes: ["A", "B", "C"],
+      edges: [
+        { source: "A", target: "B", weight: 4 },
+        { source: "B", target: "C", weight: -2 },
+        { source: "A", target: "C", weight: 5 }
+      ]
+    };
+
+    function parseNodes(text) {
+      const nodes = [];
+      for (const raw of text.split(/\r?\n/)) {
+        const line = raw.trim();
+        if (!line) continue;
+        const parts = line.split(",").map(s => s.trim());
+        const name = (parts[0] || "").toUpperCase();
+        if (!name) continue;
+        if (parts.length >= 3 && parts[1] !== "" && parts[2] !== "") {
+          const x = Number(parts[1]);
+          const y = Number(parts[2]);
+          if (!Number.isNaN(x) && !Number.isNaN(y)) {
+            nodes.push({ name, x, y });
+            continue;
+          }
+        }
+        nodes.push({ name });
+      }
+      return nodes;
+    }
+
+    function parseEdges(text) {
+      const edges = [];
+      for (const raw of text.split(/\r?\n/)) {
+        const line = raw.trim();
+        if (!line) continue;
+        const [u, v, w] = line.split(",").map(s => s.trim());
+        if (!u || !v) continue;
+        const weight = Number(w ?? "1");
+        edges.push({
+          u: u.toUpperCase(),
+          v: v.toUpperCase(),
+          w: Number.isNaN(weight) ? 1 : weight
+        });
+      }
+      return edges;
+    }
+
+    function loadGraph(mode) {
+      let graph;
+      if (mode === "default") {
+        graph = defaultGraph;
+      } else if (mode === "negative_demo") {
+        graph = negativeEdgeGraph;
+      } else {
+        graph = {
+          nodes: parseNodes(document.getElementById("nodes").value),
+          edges: parseEdges(document.getElementById("edges").value)
+        };
+      }
+      console.log("Graph loaded:", graph);
+      return graph;
+    }
+
+    async function run() {
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const algo = document.getElementById("algo").value;
+      const src = document.getElementById("src").value.trim();
+      const dst = document.getElementById("dst").value.trim();
+
+      const payload = { mode, algo, src, dst };
+
+      if (mode === "custom") {
+        payload.nodes = parseNodes(document.getElementById("nodes").value);
+        payload.edges = parseEdges(document.getElementById("edges").value);
+      } 
+      else if (mode === "default") {
+        payload.nodes = [
+          { name: "A" }, { name: "B" }, { name: "C" },
+          { name: "D" }, { name: "E" }, { name: "F" }
+        ];
+        payload.edges = [
+          { u: "A", v: "B", w: 2 },
+          { u: "A", v: "D", w: 4 },
+          { u: "B", v: "C", w: 2 },
+          { u: "B", v: "E", w: 5 },
+          { u: "C", v: "F", w: 3 },
+          { u: "D", v: "E", w: 1 },
+          { u: "E", v: "F", w: 2 }
+        ];
+      } 
+      else if (mode === "negative_demo") {
+        payload.nodes = [
+          { name: "A" }, { name: "B" }, { name: "C" }, { name: "D" }
+        ];
+        payload.edges = [
+          { u: "A", v: "B", w: 4 },
+          { u: "A", v: "C", w: 5 },
+          { u: "B", v: "C", w: -3 },
+          { u: "C", v: "D", w: 2 },
+          { u: "D", v: "B", w: 1 }
+        ];
+      }
+
+      const resEl = document.getElementById("output");
+      resEl.textContent = "Running...";
+
+      try {
+        const resp = await fetch("/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+        resEl.textContent = "";
+
+        if (!resp.ok) {
+          resEl.textContent = JSON.stringify(data, null, 2);
+          return;
+        }
+
+        if (data.image) {
+          const img = document.createElement("img");
+          img.src = "data:image/png;base64," + data.image;
+          img.style.width = "600px";
+          img.style.maxWidth = "100%";
+          img.style.height = "auto";
+          img.style.display = "block";
+          img.style.margin = "0 auto";
+          resEl.appendChild(img);
+        }
+
+        if (data.path) {
+          let formatted = `${data.algo} Path: ${JSON.stringify(data.path)} cost = ${data.cost}.0`;
+          const p = document.createElement("pre");
+          p.textContent = formatted;
+          resEl.appendChild(p);
+        }
+
+      } catch (err) {
+        resEl.textContent = String(err);
+      }
+    }
+
+    function toggleCustomSection() {
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      document.getElementById("customSection").style.display =
+        (mode === "custom") ? "grid" : "none";
+    }
+
+    document.querySelectorAll("input[name=mode]").forEach(radio => {
+      radio.addEventListener("change", (e) => {
+        toggleCustomSection();
+        loadGraph(e.target.value);
+      });
+    });
+
+    toggleCustomSection();
+    document.getElementById("runBtn").addEventListener("click", run);
+  </script>
 </body>
 </html>
